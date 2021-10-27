@@ -93,3 +93,51 @@ export async function deployImpl(web3) {
         console.log(e.message)
     }
 }
+
+
+export async function CallMethod(body) {
+    const maker = new HDWalletProvider(body.private_ext, config.rinkebyRpc)
+    const web3 = new Web3(maker)
+    callMethodImpl(web3, body)
+}
+
+export async function callMethodImpl(web3, body) {
+//    try {
+        const contractName = 'ChainHoldem' // Change this for other contract
+        const constructorArgs = []    // Put constructor args (if any) here for your contract
+
+        // Note that the script needs the ABI which is generated from the compilation artifact.
+        // Make sure contract is compiled and artifacts are generated
+
+        const artifactsPath = `/usr/src/app/src/contracts/artifacts/${contractName}.json` // Change this for different path
+
+        const content = fs.readFileSync(artifactsPath, 'utf8');
+
+        const metadata = JSON.parse(content)
+        const accounts = await web3.eth.getAccounts()
+
+        let contract = new web3.eth.Contract(metadata.abi, body.contract_address)
+
+        console.log(body.args_json)
+        let method = await buildMethod(contract, body.method, body.args_json)
+//        console.log(method)
+        const tx = await method.send({
+            from: accounts[0],
+            gas: 1500000,
+            gasPrice: '30000000000'
+        }).then((result) => {
+            }, (error) => {
+        console.log(error);
+        });
+        console.log("tx: ", tx)
+//    } catch (e) {
+//        console.log(e.message)
+//    }
+}
+
+export async function buildMethod(contract, method, args) {
+    if (method == "revealCards") {
+        return contract.methods[method](args.game_id, args.card_hash, args.hash)
+    }
+    assert(false);
+}

@@ -4,10 +4,6 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import '@openzeppelin/contracts/utils/Strings.sol';
 
-interface Transferable {
-    function safeTransferFrom(address from, address to, uint256 tokenId) external payable;
-}
-
 /**
  * @title ChainHoldem
  * @dev contract designed to organize secured decentralized PVP holdem poker matches
@@ -71,7 +67,7 @@ contract ChainHoldem {
      */
     function createGame(uint256 smallBlind, uint256 limit, bytes32 randomStateHash) payable public returns (uint256 gameId) {
         require(2 * smallBlind <= limit);
-        require(msg.value == comission + 3 * smallBlind, "require deposit at least big + small blind");
+        require(msg.value == comission + 3 * smallBlind, "require deposit equals to big + small blind");
         gameId = nextGameId++;
         address[] memory players;
         bytes32[] memory playersToStateHash;
@@ -141,13 +137,14 @@ contract ChainHoldem {
         }
     }
     
-    function revealCards(uint256 gameId, uint256 cardHash) public {
-        Game storage game = games[gameId];
+    function revealCards(uint256 gameId, bytes memory cardHash, string memory hash) public {
+        // Game storage game = games[gameId];
         // require(StringUtils.equal(game.state, "reveal"));
-        require(game.players[game.playerInStep] == msg.sender);
+        // require(game.players[game.playerInStep] == msg.sender);
+        
         bytes32 message = prefixed(keccak256(abi.encodePacked(msg.sender, cardHash)));
-        require(keccak256(abi.encodePacked(message)) == keccak256(abi.encodePacked(game.randomState + game.playerInStep)));
-        game.playerInStep = (game.playerInStep + 1) % nPlayers;
+        require(keccak256(abi.encodePacked(message)) == keccak256(abi.encodePacked(hash)), "bad hash");
+        // game.playerInStep = (game.playerInStep + 1) % nPlayers;
     }
     
     

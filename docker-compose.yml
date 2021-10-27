@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  node_kostil:
+    build: ./node-kostil
+    command: [ "npm", "run", "dev" ]
+    ports:
+      - 8001:8080
+    volumes:
+      - ./node-kostil/src/:/usr/src/app/src/

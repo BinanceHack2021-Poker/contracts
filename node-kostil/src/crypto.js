@@ -119,7 +119,7 @@ export async function callMethodImpl(web3, body) {
         let contract = new web3.eth.Contract(metadata.abi, body.contract_address)
 
         console.log(body.args_json)
-        let method = await buildMethod(contract, body.method, body.args_json)
+        let method = await buildMethod(web3, contract, body.method, body.args_json)
 //        console.log(method)
         const tx = await method.send({
             from: accounts[0],
@@ -135,9 +135,17 @@ export async function callMethodImpl(web3, body) {
 //    }
 }
 
-export async function buildMethod(contract, method, args) {
+export async function makeSignature(web3, msg) {
+    const hash = web3.utils.sha3(msg);
+    const accounts = await web3.eth.getAccounts()
+    return web3.eth.personal.sign(hash, accounts[0], function () { console.log("Signed"); });
+}
+
+export async function buildMethod(web3, contract, method, args) {
     if (method == "revealCards") {
-        return contract.methods[method](args.game_id, args.card_hash, args.hash)
+        const card_hash = await makeSignature(web3, args.hash)
+        console.log(card_hash, args.hash)
+        return contract.methods[method](args.game_id, card_hash, args.hash)
     }
     assert(false);
 }

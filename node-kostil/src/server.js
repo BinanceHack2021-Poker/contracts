@@ -1,5 +1,5 @@
 'use strict';
-import { SignMessage, Deploy } from './crypto.js';
+import { SignMessage, Deploy, CallMethod } from './crypto.js';
 
 
 import express from 'express';
@@ -32,6 +32,20 @@ app.post('/deploy', async (request, response) => {
   console.log('get', request.body);
   try {
     const link = await Deploy(request.body)
+    console.log('Response with link', link);
+    response.json({link: link, status: "OK"});
+  } catch (error) {
+    console.error(error);
+    response.json({error: error, status: "ERROR"});
+    return;
+  }
+});
+
+app.post('/call', async (request, response) => {
+  // Pass ipfs & user_address
+  console.log('get', request.body);
+  try {
+    const link = await CallMethod(request.body)
     console.log('Response with link', link);
     response.json({link: link, status: "OK"});
   } catch (error) {

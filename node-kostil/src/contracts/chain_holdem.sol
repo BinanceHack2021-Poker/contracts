@@ -16,24 +16,31 @@ contract ChainHoldem {
         address owner;
         address[] players;
         bytes32[] playersToStateHash;
+        uint256[] claimedHands;
+        uint8[] claimedCombinations;
+        uint8[] board;
         uint256 randomState;
         uint256 matchStartTime;
         uint256 smallBlind;
         uint256 limit;
-        uint playerInStep;
-        uint verifiedPlayers;
-        uint state;
+        uint8 firstPlayer;
+        uint8 playerInStep;
+        uint8 verifiedPlayers;
+        uint8 state;
     }
 
     address private contractOwner;
     uint256 private comission;
     uint256 private nextGameId = 0;
-    uint private constant nPlayers = 2;
+    uint8 private constant nPlayers = 2;
+    uint8 private constant nCards = 52;
     
-    uint private constant CREATION = 1;
-    uint private constant VERIFICATION = 2;
-    uint private constant MATCH = 3;
-    uint private constant END = 4;
+    uint8 private constant CREATION = 1;
+    uint8 private constant VERIFICATION = 2;
+    uint8 private constant MATCH = 3;
+    uint8 private constant REVEAL = 4;
+    uint8 private constant CLEAR = 5;
+    uint8 private constant END = 6;
 
     modifier isOwner(address owner) {
         require(msg.sender == owner, "Caller is not owner");
@@ -71,14 +78,21 @@ contract ChainHoldem {
         gameId = nextGameId++;
         address[] memory players;
         bytes32[] memory playersToStateHash;
+        uint256[] memory claimedHands;
+        uint8[] memory claimedCombinations;
+        uint8[] memory board;
         Game memory game = Game({
             owner: msg.sender,
             players: players,
             playersToStateHash: playersToStateHash,
+            claimedHands: claimedHands,
+            claimedCombinations: claimedCombinations,
+            board: board,
             randomState: 0,
             matchStartTime: 0,
             smallBlind: smallBlind,
             limit: limit,
+            firstPlayer: 0,
             playerInStep: 0,
             verifiedPlayers: 0,
             state: CREATION
@@ -91,14 +105,13 @@ contract ChainHoldem {
      * @dev Join existed game
      * @param gameId is id of game
      * @param randomStateHash is keccak256 hash of random state part proposed by player
-     * in future this method will return playerId, for now, gameOwner has id - 0, and second player - 1
      */
-    function joinGame(uint256 gameId, bytes32 randomStateHash) payable public {
+    function joinGame(uint256 gameId, bytes32 randomStateHash) payable public returns(uint playerId) {
         Game storage game = games[gameId];
-        // require(StringUtils.equal(game.state, CREATION), "can't join already created game");
-        require(game.state == CREATION);
+        require(game.state == CREATION, "can't join already created game");
         require(msg.value == comission + 3 * game.smallBlind, "require deposit at least big + small blind");
         require(game.players.length < nPlayers, "can't join to full table");
+        playerId = game.players.length;
         game.players.push(msg.sender);
         game.playersToStateHash.push(randomStateHash);
         if (game.players.length == nPlayers) {
@@ -110,7 +123,7 @@ contract ChainHoldem {
      * @dev Escape from created game(which not started yet) and destroy it, could be called only by owner
      * @param gameId is id of game
      */
-    function escapeGame(uint256 gameId)  payable public {
+    function escapeGame(uint256 gameId) payable public {
         Game storage game = games[gameId];
         require(game.state == CREATION, "can't escape from started game");
         require(game.owner == msg.sender);
@@ -132,24 +145,63 @@ contract ChainHoldem {
                     game.matchStartTime =  block.timestamp;
                     game.state = MATCH;
                 }
-                break;
+                return;
             }
+        }
+        require(false, "unreachable code");
+    }
+    
+    function revealCards(uint256 gameId, bytes memory signature, uint256 claimedHand, uint8 claimedCombination) public {
+        Game storage game = games[gameId];
+        require(game.state == REVEAL, "expect reveal stage");
+        require(game.players[game.playerInStep] == msg.sender);
+        bytes32 message = prefixed(keccak256(abi.encodePacked(game.randomState + game.playerInStep)));
+        
+        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+        require(ecrecover(message, v, r, s) == msg.sender, "bad signer");
+        (uint8 card1Id, uint8 card2Id) = parseCards(v, r, s);
+        require(checkClaimedHand(claimedHand, card1Id, card2Id, game.board));
+        // require(checkClaimedCombination(claimedHand, claimedCombination));
+        game.claimedHands[game.playerInStep] = claimedHand;
+        game.claimedCombinations[game.playerInStep] = claimedCombination;
+        game.playerInStep = (game.playerInStep + 1) % nPlayers;
+        if (game.playerInStep == game.firstPlayer) {
+            game.state = CLEAR;
         }
     }
     
-    event CardMessage(bytes32 message, address recoveredSender);
+    function checkClaimedHand(uint256 claimedHand, uint8 card1Id, uint8 card2Id, uint8[] memory board) internal pure returns(bool) {
+        for(uint i = 0; i < 5; ++i) {
+            uint8 clamedCard = uint8(claimedHand % 52);
+            claimedHand = claimedHand / 52;
+            if (clamedCard != card1Id && clamedCard != card2Id) {
+                bool foundEq = false;
+                for(uint j = 0;j < board.length; ++j) {
+                    if (clamedCard == board[j]) {
+                        foundEq = true;
+                        break;
+                    }
+                }
+                if(!foundEq) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+
+
+    function cardId2Obj(uint8 cardId) internal pure returns (uint8, uint8) {
+        uint8 cardType = cardId % 4;
+        uint8 cardOrder = cardId / 4;
+        return (cardType, cardOrder);
+    }
     
-    function revealCards(uint256 gameId, bytes memory signature, string memory hash, address sender) public {
-        // Game storage game = games[gameId];
-        // require(StringUtils.equal(game.state, "reveal"));
-        // require(game.players[game.playerInStep] == msg.sender);
-        
-        bytes32 message = prefixed(keccak256(abi.encodePacked(hash)));
-        
-        emit CardMessage(message, recoverSigner(message, signature));
-        
-        require(recoverSigner(message, signature) == sender, "bad sender");
-        // game.playerInStep = (game.playerInStep + 1) % nPlayers;
+    function parseCards(uint8 v, bytes32 r, bytes32 s) internal pure returns (uint8, uint8) {
+        uint8 card1Id = uint8((3 * uint256(s) + 5 * uint256(r) + 7 * v) % nCards);
+        uint8 card2Id = uint8((11 * uint256(s) + 13 * uint256(r) + 17 * v) % nCards);
+        return (card1Id, card2Id);
     }
     
     /// signature methods.
@@ -172,35 +224,9 @@ contract ChainHoldem {
         return (v, r, s);
     }
 
-    function recoverSigner(bytes32 message, bytes memory sig)
-        internal
-        pure
-        returns (address)
-    {
-        (uint8 v, bytes32 r, bytes32 s) = splitSignature(sig);
-
-        return ecrecover(message, v, r, s);
-    }
-    
     
     /// builds a prefixed hash to mimic the behavior of eth_sign.
     function prefixed(bytes32 hash) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
-
-    // function bookTransfer(address receiver, address nftContract, uint256 tokenId) payable public isOwner {
-    //     bookedTransfer[keccak256(abi.encodePacked(nftContract, tokenId))] = receiver;
-    //     payable(receiver).transfer(comission / 2);
-    // }
-
-
-    // /**
-    // * performTransferNFT with confirmation, it needed to not trust our backend
-    // **/
-    // function performTransferNFT(address sender, address receiver, address nftContract, uint256 tokenId, string memory confirmation) public {
-    //     bytes32 nft = keccak256(abi.encodePacked(nftContract, tokenId));
-    //     require(bookedTransfer[nft] == msg.sender);
-    //     require(confirmationHashes[nft] == keccak256(abi.encodePacked(confirmation)));
-    //     Transferable(nftContract).safeTransferFrom(sender, receiver, tokenId);
-    // }
 }

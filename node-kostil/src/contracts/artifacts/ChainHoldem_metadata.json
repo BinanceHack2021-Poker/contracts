@@ -17,25 +17,6 @@
 				"type": "constructor"
 			},
 			{
-				"anonymous": false,
-				"inputs": [
-					{
-						"indexed": false,
-						"internalType": "bytes32",
-						"name": "message",
-						"type": "bytes32"
-					},
-					{
-						"indexed": false,
-						"internalType": "address",
-						"name": "recoveredSender",
-						"type": "address"
-					}
-				],
-				"name": "CardMessage",
-				"type": "event"
-			},
-			{
 				"inputs": [
 					{
 						"internalType": "address",
@@ -104,7 +85,13 @@
 					}
 				],
 				"name": "joinGame",
-				"outputs": [],
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "playerId",
+						"type": "uint256"
+					}
+				],
 				"stateMutability": "payable",
 				"type": "function"
 			},
@@ -121,14 +108,14 @@
 						"type": "bytes"
 					},
 					{
-						"internalType": "string",
-						"name": "hash",
-						"type": "string"
+						"internalType": "uint256",
+						"name": "claimedHand",
+						"type": "uint256"
 					},
 					{
-						"internalType": "address",
-						"name": "sender",
-						"type": "address"
+						"internalType": "uint8",
+						"name": "claimedCombination",
+						"type": "uint8"
 					}
 				],
 				"name": "revealCards",
@@ -186,7 +173,7 @@
 					"details": "Join existed game",
 					"params": {
 						"gameId": "is id of game",
-						"randomStateHash": "is keccak256 hash of random state part proposed by player in future this method will return playerId, for now, gameOwner has id - 0, and second player - 1"
+						"randomStateHash": "is keccak256 hash of random state part proposed by player"
 					}
 				}
 			},
@@ -224,11 +211,11 @@
 			]
 		},
 		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/chain_holdem.sol": {
-			"keccak256": "0xae470662bbd9c4bef1e98f4ef443670e8f51433ed872ce16689c4ab136eb06d0",
+			"keccak256": "0x33434d3980526d2524ff0295b22125df804c4e93061b49c0cae92cec40b50233",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://e74a0bce819a7314eed1f8f284125313480a18a7035d9542b7a6d945e35ce35b",
-				"dweb:/ipfs/QmTLn3o3NQ9VkSj1w6q47w69uZgAeTp3YryhLYTPbQ2tDZ"
+				"bzz-raw://ba203beb936b5218375dcbd3d00c986689c1749bdea1b87cf559b12aecb82922",
+				"dweb:/ipfs/QmcnQBmLevpSgJ3NPQj86ik8tVDYhWkrzMVQ7gzaf8sKjy"
 			]
 		}
 	},

@@ -211,11 +211,11 @@
 			]
 		},
 		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/chain_holdem.sol": {
-			"keccak256": "0x33434d3980526d2524ff0295b22125df804c4e93061b49c0cae92cec40b50233",
+			"keccak256": "0x15841e667f9eaff5b675c06d99455f319ccea50bd197d29b0486b26ed44e0aef",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://ba203beb936b5218375dcbd3d00c986689c1749bdea1b87cf559b12aecb82922",
-				"dweb:/ipfs/QmcnQBmLevpSgJ3NPQj86ik8tVDYhWkrzMVQ7gzaf8sKjy"
+				"bzz-raw://cbae99606f35452df542591f318d5368df07c1d84cb81b62acd1fd114522fa13",
+				"dweb:/ipfs/Qmc5hhoKqatdAGqNeanoZJY5iyj8FwaizWmZdjPW9fP6Am"
 			]
 		}
 	},

@@ -42,6 +42,16 @@ contract ChainHoldem {
     uint8 private constant CLEAR = 5;
     uint8 private constant END = 6;
 
+    uint8 private constant HIGH_CARD = 0;
+	uint8 private constant ONE_PAIR = 1;
+	uint8 private constant TWO_PAIR = 2;
+	uint8 private constant THREE_OF_A_KIND = 3;
+	uint8 private constant STRAIGHT = 4;
+	uint8 private constant FLUSH = 5;
+	uint8 private constant FULL_HOUSE = 6;
+	uint8 private constant FOUR_OF_A_KIND = 7;
+	uint8 private constant STRAIGHT_FLUSH = 8;
+
     modifier isOwner(address owner) {
         require(msg.sender == owner, "Caller is not owner");
         _;
@@ -161,7 +171,7 @@ contract ChainHoldem {
         require(ecrecover(message, v, r, s) == msg.sender, "bad signer");
         (uint8 card1Id, uint8 card2Id) = parseCards(v, r, s);
         require(checkClaimedHand(claimedHand, card1Id, card2Id, game.board));
-        // require(checkClaimedCombination(claimedHand, claimedCombination));
+        require(checkClaimedCombination(claimedHand, claimedCombination));
         game.claimedHands[game.playerInStep] = claimedHand;
         game.claimedCombinations[game.playerInStep] = claimedCombination;
         game.playerInStep = (game.playerInStep + 1) % nPlayers;
@@ -170,10 +180,102 @@ contract ChainHoldem {
         }
     }
     
+    function checkNCardsEqual(uint256 hand, uint8 nCards, uint8 offset) pure internal returns(bool) {
+        uint8 goldenCardId = nCards;
+        for(uint i = 0; i < 5; ++i) {
+            uint8 card = uint8(hand % nCards);
+            uint8 cardId = card / 4;
+            hand = hand / nCards;
+            if (i >= offset && i < offset + nCards) {
+                if (goldenCardId == nCards) {
+                    goldenCardId = cardId;
+                    continue;
+                }
+                if (goldenCardId != cardId) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    function checkFlush(uint256 hand) pure internal returns(bool)  {
+        uint8 goldenType = nCards;
+        for(uint i = 0; i < 5; ++i) {
+            uint8 card = uint8(hand % nCards);
+            uint8 cardType = card % 4;
+            hand = hand / nCards;
+            if (goldenType == nCards) {
+                goldenType = cardType;
+                continue;
+            }
+            if (goldenType != cardType) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    
+    function checkStraight(uint256 hand) pure internal returns(bool)  {
+        uint8 lastId = nCards;
+        for(uint i = 0; i < 5; ++i) {
+            uint8 card = uint8(hand % nCards);
+            uint8 cardId = card / 4;
+            hand = hand / nCards;
+            if (i > 0) {
+                if (cardId + 1 != lastId) {
+                    return false;
+                }
+            }
+            lastId = cardId;
+        }
+        return true;
+    }
+    
+    
+    function checkClaimedCombination(uint256 claimedHand, uint8 claimedCombination) internal pure returns(bool) {
+        if (claimedCombination == HIGH_CARD) {
+            return true;
+        }
+        if (claimedCombination == ONE_PAIR) {
+            return checkNCardsEqual(claimedHand, 2, 0);
+        }
+        
+        if (claimedCombination == TWO_PAIR) {
+            return checkNCardsEqual(claimedHand, 2, 0) && checkNCardsEqual(claimedHand, 2, 2);
+        }
+        
+        if (claimedCombination == THREE_OF_A_KIND) {
+            return checkNCardsEqual(claimedHand, 3, 0);
+        }
+        
+        if (claimedCombination == STRAIGHT) {
+            return checkStraight(claimedHand);
+        }
+        
+        if (claimedCombination == FLUSH) {
+            return checkFlush(claimedHand);
+        }
+        
+        if (claimedCombination == FULL_HOUSE) {
+            return checkNCardsEqual(claimedHand, 3, 0) && checkNCardsEqual(claimedHand, 2, 3);
+        }
+        
+        if (claimedCombination == FOUR_OF_A_KIND) {
+            return checkNCardsEqual(claimedHand, 4, 0);
+        }
+        
+        if (claimedCombination == STRAIGHT_FLUSH) {
+            return checkStraight(claimedHand) && checkFlush(claimedHand);
+        }
+        return false;
+    }
+    
     function checkClaimedHand(uint256 claimedHand, uint8 card1Id, uint8 card2Id, uint8[] memory board) internal pure returns(bool) {
         for(uint i = 0; i < 5; ++i) {
-            uint8 clamedCard = uint8(claimedHand % 52);
-            claimedHand = claimedHand / 52;
+            uint8 clamedCard = uint8(claimedHand % nCards);
+            claimedHand = claimedHand / nCards;
             if (clamedCard != card1Id && clamedCard != card2Id) {
                 bool foundEq = false;
                 for(uint j = 0;j < board.length; ++j) {

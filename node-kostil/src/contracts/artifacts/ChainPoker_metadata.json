@@ -1,0 +1,276 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "_comission",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "newOwner",
+						"type": "address"
+					}
+				],
+				"name": "changeOwner",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "smallBlind",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "limit",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "randomStateHash",
+						"type": "bytes32"
+					}
+				],
+				"name": "createGame",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "randomStateHash",
+						"type": "bytes32"
+					}
+				],
+				"name": "joinGame",
+				"outputs": [
+					{
+						"internalType": "uint8",
+						"name": "playerId",
+						"type": "uint8"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "playerId",
+						"type": "uint256"
+					}
+				],
+				"name": "makeBet",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					}
+				],
+				"name": "requestBank",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes",
+						"name": "signature",
+						"type": "bytes"
+					},
+					{
+						"internalType": "uint256",
+						"name": "claimedHand",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint8",
+						"name": "claimedCombination",
+						"type": "uint8"
+					}
+				],
+				"name": "revealCards",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "randomStateHash",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "uint8",
+						"name": "playerId",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "cardMask",
+						"type": "uint8"
+					}
+				],
+				"name": "supplyRandomStateHash",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "gameId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "randomState",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint8",
+						"name": "playerId",
+						"type": "uint8"
+					}
+				],
+				"name": "verifyPlayerState",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"details": "contract designed to organize secured decentralized PVP dro-poker matches each game starts with createGame method, and represents one round, i e for each game will be played the same matches as the number of players(2)",
+			"kind": "dev",
+			"methods": {
+				"changeOwner(address)": {
+					"details": "Change contract owner",
+					"params": {
+						"newOwner": "address of new owner"
+					}
+				},
+				"constructor": {
+					"details": "Set contract deployer as owner and comission"
+				},
+				"createGame(uint256,uint256,bytes32)": {
+					"details": "Create new game and join owner to it",
+					"params": {
+						"limit": "is size of limit for each bet (in wei)",
+						"randomStateHash": "is keccak256 hash of random state part proposed by player returns gameId is id for created game",
+						"smallBlind": "is size of small blind (in wei)"
+					}
+				},
+				"joinGame(uint256,bytes32)": {
+					"details": "Join existed game",
+					"params": {
+						"gameId": "is id of game",
+						"randomStateHash": "is keccak256 hash of random state part proposed by player"
+					}
+				}
+			},
+			"title": "ChainPoker",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/chain_poker.sol": "ChainPoker"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/utils/Strings.sol": {
+			"keccak256": "0x391d3ba97ab6856a16b225d6ee29617ad15ff00db70f3b4df1ab5ea33aa47c9d",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://d636ba90bbbeed04a1ea7fe9ec2466757e30fd38ba2ca173636dbf69a518735e",
+				"dweb:/ipfs/QmQwCB2BHnEuYR22PYt9HkpbgeFDhq4rHmaYqAZbX3WRC7"
+			]
+		},
+		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/chain_poker.sol": {
+			"keccak256": "0x23f8c3612d631fa19520ca664818ec7db127efc3361a91887f0b25d4058da66d",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://49a838ba5aac4f1fcd987a27923f13067a18e9a9bcb3fb808ced838afef32ed0",
+				"dweb:/ipfs/QmU2w8eRWr3qNX8N8ajFmRzvxAhovFFdDiK61ggBt57os4"
+			]
+		},
+		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/utils.sol": {
+			"keccak256": "0x16103166f97ce981aaf13ab95baed81d4b881a6711fec82726536e862b0893de",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://798c6f1b57d7658a155a316c137be132a0e9396efb6d0fabce420567d1c07c97",
+				"dweb:/ipfs/QmQVZwPjY6GGkoBVoyi7Efpm2SrB91RmVcsVqrpsYbmjBX"
+			]
+		}
+	},
+	"version": 1
+}

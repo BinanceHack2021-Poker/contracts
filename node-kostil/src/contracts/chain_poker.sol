@@ -2,7 +2,6 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 
-import '@openzeppelin/contracts/utils/Strings.sol';
 import './utils.sol';
 
 /**
@@ -136,10 +135,8 @@ contract ChainPoker {
         
         game.verifiedPlayers += 1;
         if (game.verifiedPlayers == nPlayers) {
+            game.verifiedPlayers = 0;
             game.state = NEED_VERIFICATION_AFTER_START;
-        }
-        
-        if (game.players.length == nPlayers) {
             payable(contractOwner).transfer(nPlayers * comission);
         }
     }
@@ -152,6 +149,12 @@ contract ChainPoker {
         game.playersToStateHash[playerId] = randomStateHash;
         game.cardMasks[playerId] = cardMask;
         game.verifiedPlayers += 1;
+        if (game.count == playerId && game.state == SUPPLY_STATE_AFTER_START) {
+            game.money += 2 * game.smallBlind;
+        }
+        if ((game.count + 1) % nPlayers == playerId && game.state == SUPPLY_STATE_AFTER_START) {
+            game.money += game.smallBlind;
+        }
         if (game.verifiedPlayers == nPlayers) {
             game.verifiedPlayers = 0;
             if (game.state == SUPPLY_STATE_AFTER_START) {
@@ -161,53 +164,45 @@ contract ChainPoker {
                 game.state = NEED_VERIFICATION_AFTER_CHANGE;
             }
         }
-        if (game.count == playerId) {
-            game.money += 2 * game.smallBlind;
-        }
-        if ((game.count + 1) % nPlayers == playerId) {
-            game.money += game.smallBlind;
-        }
     }
     
 
     function verifyPlayerState(uint256 gameId, uint256 randomState, uint8 playerId) public {
         Game storage game = games[gameId];
-        require(game.state == NEED_VERIFICATION_AFTER_START || game.state == NEED_VERIFICATION_AFTER_CHANGE);
-        require(playerId == (3 * nPlayers - 1 - game.count - game.verifiedPlayers) % nPlayers);
-        require(game.players[playerId] == msg.sender);
-        require(game.playersToStateHash[playerId] == keccak256(abi.encodePacked(randomState)));
+        require(game.state == NEED_VERIFICATION_AFTER_START || game.state == NEED_VERIFICATION_AFTER_CHANGE, "wrong stage");
+        require(playerId == (3 * nPlayers - 1 - game.count - game.verifiedPlayers) % nPlayers, "wrong player");
+        require(game.players[playerId] == msg.sender, "wrong msg sender");
+        require(game.playersToStateHash[playerId] == keccak256(abi.encodePacked(randomState)), "wrong seed");
         game.randomState += randomState;
         game.verifiedPlayers += 1;
         if (game.verifiedPlayers == nPlayers) {
             game.playerInStep = 0;
-            if (game.state == NEED_VERIFICATION_AFTER_START) {
-                game.state = FIRST_TURN;
-            }
-            if (game.state == NEED_VERIFICATION_AFTER_CHANGE) {
-                game.state = SECOND_TURN;
-            }
+            game.state = REVEAL; // SKIP FOR DEBUG
+            // if (game.state == NEED_VERIFICATION_AFTER_START) {
+            //     game.state = FIRST_TURN;
+            // }
+            // if (game.state == NEED_VERIFICATION_AFTER_CHANGE) {
+            //     game.state = SECOND_TURN;
+            // }
         }
     }
     
     function makeBet(uint256 gameId, uint256 playerId) public payable {
         Game storage game = games[gameId];
-        require(game.state == FIRST_TURN || game.state == SECOND_TURN);
-        require(game.players[playerId] == msg.sender);
-        require((game.count + game.playerInStep) % nPlayers == playerId);
-        if (game.playerInStep == 0) {
-            game.lastBet = 0;
-        }
-        require((game.lastBet == msg.value || game.lastBet * 2 <= msg.value) && msg.value <= game.limit);
+        require(game.state == FIRST_TURN || game.state == SECOND_TURN, "state is not turn");
+        require(game.players[playerId] == msg.sender, "sender is not right player");
+        require((game.count + game.playerInStep) % nPlayers == playerId, "it's not your turn");
+        require((game.lastBet == msg.value || game.lastBet * 2 <= msg.value) && msg.value <= game.limit, "wrong bet");
         game.money += msg.value;
-        if (game.lastBet != msg.value && game.playerInStep == nPlayers) {
-            game.lastBet = msg.value;
+        game.lastBet = msg.value - game.lastBet;
+        game.playerInStep += 1;
+        if (game.lastBet != 0 && game.playerInStep == nPlayers) {
             game.playerInStep = 0;
             return;
         }
 
-        game.lastBet = msg.value;
-        game.playerInStep += 1;
         if (game.playerInStep == nPlayers) {
+            game.lastBet = 0;
             game.playerInStep = 0;
             game.verifiedPlayers = 0;
             if (game.state == FIRST_TURN) {
@@ -220,18 +215,19 @@ contract ChainPoker {
     }
     
     
-    function revealCards(uint256 gameId, bytes memory signature, uint256 claimedHand, uint8 claimedCombination) public {
+    function revealCards(uint256 gameId, bytes memory signature, uint256 claimedHand, uint8 claimedCombination, uint8 playerId) public {
         Game storage game = games[gameId];
         require(game.state == REVEAL, "expect reveal stage");
-        require(game.players[game.playerInStep] == msg.sender);
-        bytes32 message = prefixed(keccak256(abi.encodePacked(game.randomState + game.playerInStep)));
-        
+        uint8 currentPlayer = (game.count + game.playerInStep) % nPlayers;
+        require(currentPlayer == playerId);
+        require(game.players[currentPlayer] == msg.sender);
+        bytes32 message = prefixed(keccak256(abi.encodePacked(game.randomState + playerId)));
         (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
-        require(ecrecover(message, v, r, s) == msg.sender, "bad signer");
+        // require(ecrecover(message, v, r, s) == msg.sender, "bad signer");
         uint8[5] memory cardIds = parseCards(v, r, s);
         require(PokerUtils.checkClaimedHand(claimedHand, cardIds));
         require(PokerUtils.checkClaimedCombination(claimedHand, claimedCombination));
-        game.ranks[game.playerInStep] = PokerUtils.calcHandRank(claimedHand, claimedCombination);
+        game.ranks[playerId] = PokerUtils.calcHandRank(claimedHand, claimedCombination);
         game.playerInStep = (game.playerInStep + 1) % nPlayers;
         if (game.playerInStep == game.count) {
             game.state = CLEAR;

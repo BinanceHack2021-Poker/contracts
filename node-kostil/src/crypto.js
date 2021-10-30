@@ -3,6 +3,10 @@ import Web3 from "web3"
 import axios from "axios"
 
 import ethJSUtil from 'ethereumjs-util'
+
+import leftPad from 'left-pad'
+
+import BN from 'bn.js'
 //import call from "remix"
 //import { erc721Abi } from "./contracts/raribleTransferContractAbi.js"
 
@@ -34,19 +38,51 @@ const config = {
 export async function SignMessage(body) {
     const maker = new HDWalletProvider(body.private_ext, config.rinkebyRpc)
     const web3 = new Web3(maker)
-    signMessageImpl(web3, body.msg, body.private_ext)
+    signMessageImpl(web3, body.msg)
 }
 
-export async function signMessageImpl(web3, msg, privateKey) {
-    try {
-        const personalMsg = ethJSUtil.hashPersonalMessage(Buffer.from(msg))
-        var rsv = ethJSUtil.ecsign(personalMsg, privateKey)
-        var signedData = ethJSUtil.toRpcSig(rsv.v, rsv.r, rsv.s)
-        console.log('0x' + personalMsg.toString('hex'), signedData)
-        return {"hash": '0x' + personalMsg.toString('hex'), "signature": signedData}
-    } catch (e) {
-        console.log(e.message)
+export async function parseCardsCombinationFromSignature(web3, _r, _s, _v) {
+    _r = "0x" + _r
+    _s = "0x" + _s
+    _v = "0x" + _v
+    console.log("rsv: ", _r, _s, _v)
+//    r = web3.utils.toDecimal(_r)
+    const r = new web3.utils.BN(_r)
+    const s = new web3.utils.BN(_s)
+    const v = new web3.utils.BN(_v)
+    console.log("r", r, s, v)
+//    s = web3.utils.toDecimal(_s)
+//    v = web3.utils.toDecimal(_v)
+    console.log(v , _v, r, _r, s, _s);
+    var seed = 3 * s + 5 * r + 7 * v;
+    var cards = [];
+    for(let i =0; i < 5; ++i) {
+        cards.push(seed % 52);
+        seed = 31 * seed + 13;
     }
+    console.log(cards);
+    return cards;
+}
+
+export async function hexToBytes(hex) {
+// hex = "0x..."
+    for (var bytes = [], c = 2; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+    return bytes;
+}
+
+export async function signMessageImpl(web3, msg) {
+    const hash = web3.utils.soliditySha3(msg);
+    const accounts = await web3.eth.getAccounts()
+    const signature = await web3.eth.personal.sign(hash, accounts[0], function () { console.log("Signed"); });
+    parseCardsCombinationFromSignature(
+        web3,
+        signature.slice(2, 32 * 2 + 2),
+        signature.slice(32 * 2 + 2, 64 * 2 + 2),
+        signature.slice(64 * 2 + 2, 65 *2 + 2));
+//    console.log('0x' + personalMsg.toString('hex'), signedData)
+    console.log({"hash": hash, "signature": signature})
+    return {"hash": hash, "signature": signature}
 }
 
 export async function Deploy(body) {

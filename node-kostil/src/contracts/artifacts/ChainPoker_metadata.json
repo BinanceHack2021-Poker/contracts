@@ -134,6 +134,11 @@
 						"internalType": "uint8",
 						"name": "claimedCombination",
 						"type": "uint8"
+					},
+					{
+						"internalType": "uint8",
+						"name": "playerId",
+						"type": "uint8"
 					}
 				],
 				"name": "revealCards",
@@ -256,11 +261,11 @@
 			]
 		},
 		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/chain_poker.sol": {
-			"keccak256": "0x23f8c3612d631fa19520ca664818ec7db127efc3361a91887f0b25d4058da66d",
+			"keccak256": "0x139d1de4d8657968c5c03c6332fa366f53da6467e25fe554d606c536c3b00b0b",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://49a838ba5aac4f1fcd987a27923f13067a18e9a9bcb3fb808ced838afef32ed0",
-				"dweb:/ipfs/QmU2w8eRWr3qNX8N8ajFmRzvxAhovFFdDiK61ggBt57os4"
+				"bzz-raw://c86dbb6c1cd03c5b527e6dc26ce19e0e07cc4a04deb167f000b1794494489ed5",
+				"dweb:/ipfs/QmWZFEwAdpHnEXs6FFnMW3nsTYGoqB7JYUJuyhZKgCV9nN"
 			]
 		},
 		"Users/sergmiller/Documents/my/contracts/node-kostil/src/contracts/utils.sol": {
